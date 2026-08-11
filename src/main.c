@@ -122,7 +122,9 @@ int recv_probe(int sock, struct sockaddr_in *reply_addr)
     struct icmphdr *inner_icmp;
     socklen_t len = sizeof(*reply_addr);
     ssize_t ret;
+    uint16_t my_id;
 
+    my_id = getpid() & 0xFFFF;
     ret = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)reply_addr, &len);
     if (ret < 0)
     {
@@ -137,13 +139,18 @@ int recv_probe(int sock, struct sockaddr_in *reply_addr)
     {
         inner_ip = (struct iphdr *)((char *)icmp + 8);
         inner_icmp = (struct icmphdr *)((char *)inner_ip + inner_ip->ihl * 4);
-        if (inner_icmp->un.echo.id != (getpid() & 0xFFFF))
+        if (inner_icmp->un.echo.id != my_id)
             return (-1);
         return (icmp->type);
     }
-    if (icmp->un.echo.id != (getpid() & 0xFFFF))
+    if (icmp->un.echo.id != my_id)
         return (-1);
     return (icmp->type);
+}
+
+static double elapsed_ms(struct timeval *start, struct timeval *end)
+{
+    return ((end->tv_sec - start->tv_sec) * 1000.0 + (end->tv_usec - start->tv_usec) / 1000.0);
 }
 
 int main(int argc, char **argv)
@@ -161,23 +168,17 @@ int main(int argc, char **argv)
 
     for (int ttl = 1; ttl <= MAX_HOPS; ttl++)
     {
-        int printed_ip = 0;
         printf("%2d ", ttl);
-
-        char *hop_d = NULL;
         for (int probe = 0; probe < 3; probe++)
         {
             struct timeval start, end;
-            double elapsed;
-
             gettimeofday(&start, NULL);
             send_probe(sock, &args.dest, ttl);
             type = recv_probe(sock, &reply_addr);
             while (type == -1)
             {
                 gettimeofday(&end, NULL);
-                elapsed = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-                if (elapsed > 3000.0)
+                if (elapsed_ms(&start, &end) > 3000.0)
                 {
                     type = -2;
                     break;
@@ -185,18 +186,10 @@ int main(int argc, char **argv)
                 type = recv_probe(sock, &reply_addr);
             }
             gettimeofday(&end, NULL);
-            if (!printed_ip && type >= 0)
-            {
-                printf("%s ", inet_ntoa(reply_addr.sin_addr));
-                printed_ip = 1;
-            }
             if (type == -2)
-                printf("* ");
+                printf("  *");
             else
-            {
-                double rtt = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-                printf("%.3f ms ", rtt);
-            }
+                printf("  %s  %.3f ms", inet_ntoa(reply_addr.sin_addr), elapsed_ms(&start, &end));
         }
         printf("\n");
         if (reply_addr.sin_addr.s_addr == args.dest.sin_addr.s_addr)
