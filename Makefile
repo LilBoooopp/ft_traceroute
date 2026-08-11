@@ -1,5 +1,5 @@
 #───────────────────────────  PROJECT BASICS  ────────────────────────────────#
-NAME = template
+NAME = ft_traceroute
 CC   = cc
 INC = include
 RM   = rm -rf
@@ -44,7 +44,6 @@ BOLD='\033[1m'
 
 #────────────────────────────────  RULES  ─────────────────────────────────────#
 all: reset_counter $(OBJ_DIR) $(LIBFT) $(NAME)
-	@git submodule update --init --recursive
 
 reset_counter:
 	@rm -f .counter
@@ -55,6 +54,7 @@ $(OBJ_DIR):
 	@printf $(BOLD)$(MAGENTA)"Objects directory created\n"$(NONE)
 
 $(LIBFT):
+	@git submodule update --init --recursive
 	@printf $(CURSIVE)$(GRAY)"🔧 Making libft...\n"$(NONE)
 	@$(MAKE) -C $(LIBFT_DIR)
 
