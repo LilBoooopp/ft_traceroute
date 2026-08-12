@@ -41,18 +41,32 @@ t_args parse_args(int argc, char **argv)
     t_args args;
 
     memset(&args, 0, sizeof(t_args));
-    if (argc < 2)
+    args.max_hops = MAX_HOPS;
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--help") == 0)
+        {
+            print_help();
+            exit(0);
+        }
+        else if (strcmp(argv[i], "-m") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -m requires a value\n");
+                exit(1);
+            }
+            args.max_hops = atoi(argv[++i]);
+        }
+        else if (argv[i][0] != '-')
+            args.hostname = argv[i];
+    }
+    if (!args.hostname)
     {
         printf("ft_traceroute: missing destination\n");
         print_help();
         exit(1);
     }
-    if (strcmp(argv[1], "--help") == 0)
-    {
-        print_help();
-        exit(0);
-    }
-    args.hostname = argv[1];
     return (args);
 }
 
