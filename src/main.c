@@ -58,6 +58,7 @@ t_args parse_args(int argc, char **argv)
             }
             args.max_hops = atoi(argv[++i]);
         }
+         else if (strcmp(argv[i], "-"))
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
     }
@@ -176,11 +177,11 @@ int main(int argc, char **argv)
 
     args = parse_args(argc, argv);
     resolve_hostname(&args);
-    printf("ft_traceroute to %s (%s), %d hops max\n", args.hostname, inet_ntoa(args.dest.sin_addr), MAX_HOPS);
+    printf("ft_traceroute to %s (%s), %d hops max\n", args.hostname, inet_ntoa(args.dest.sin_addr), args.max_hops);
     sock = create_socket();
     set_socket_timeout(sock, 3);
 
-    for (int ttl = 1; ttl <= MAX_HOPS; ttl++)
+    for (int ttl = 1; ttl <= args.max_hops; ttl++)
     {
         printf("%2d ", ttl);
         for (int probe = 0; probe < 3; probe++)
