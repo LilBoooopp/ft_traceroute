@@ -17,6 +17,8 @@
 void print_help(void)
 {
     printf("Usage: ft_traceroute [--help] <destination>\n");
+    printf("  -m max_hops    Set max number of hops (default 30)\n");
+    printf(" -q nqueries    Set number of probes per hop (deafult 3)\n");
 }
 
 unsigned short checksum(void *buf, int len)
@@ -42,6 +44,7 @@ t_args parse_args(int argc, char **argv)
 
     memset(&args, 0, sizeof(t_args));
     args.max_hops = MAX_HOPS;
+    args.nqueries = 3;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--help") == 0)
@@ -58,7 +61,15 @@ t_args parse_args(int argc, char **argv)
             }
             args.max_hops = atoi(argv[++i]);
         }
-         else if (strcmp(argv[i], "-"))
+        else if (strcmp(argv[i], "-q") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -q requires a value\n");
+                exit(1);
+            }
+            args.nqueries = atoi(argv[++i]);
+        }
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
     }
@@ -184,7 +195,7 @@ int main(int argc, char **argv)
     for (int ttl = 1; ttl <= args.max_hops; ttl++)
     {
         printf("%2d ", ttl);
-        for (int probe = 0; probe < 3; probe++)
+        for (int probe = 0; probe < args.nqueries; probe++)
         {
             struct timeval start, end;
             gettimeofday(&start, NULL);
