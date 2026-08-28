@@ -18,6 +18,7 @@ typedef struct s_args {
     struct sockaddr_in  dest;
     int max_hops;
     int nqueries;
+    int tos;
 }   t_args;
 
 t_args  parse_args(int argc, char **argv);

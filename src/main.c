@@ -18,7 +18,8 @@ void print_help(void)
 {
     printf("Usage: ft_traceroute [--help] <destination>\n");
     printf("  -m max_hops    Set max number of hops (default 30)\n");
-    printf(" -q nqueries    Set number of probes per hop (deafult 3)\n");
+    printf("  -q nqueries    Set number of probes per hop (default 3)\n");
+    printf("  -t tos         Set type of service bytes (default 0)\n");
 }
 
 unsigned short checksum(void *buf, int len)
@@ -45,6 +46,7 @@ t_args parse_args(int argc, char **argv)
     memset(&args, 0, sizeof(t_args));
     args.max_hops = MAX_HOPS;
     args.nqueries = 3;
+    args.tos = 0;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--help") == 0)
@@ -69,6 +71,15 @@ t_args parse_args(int argc, char **argv)
                 exit(1);
             }
             args.nqueries = atoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-t") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -t requires a value\n");
+                exit(1);
+            }
+            args.tos = atoi(argv[++i]);
         }
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
@@ -123,10 +134,11 @@ void set_socket_timeout(int sock, int seconds)
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 }
 
-void send_probe(int sock, struct sockaddr_in *dest, int ttl)
+void send_probe(int sock, struct sockaddr_in *dest, int ttl, int tos)
 {
     struct icmphdr icmp;
 
+    setsockopt(sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
     setsockopt(sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
     
     memset(&icmp, 0, sizeof(icmp));
@@ -199,7 +211,7 @@ int main(int argc, char **argv)
         {
             struct timeval start, end;
             gettimeofday(&start, NULL);
-            send_probe(sock, &args.dest, ttl);
+            send_probe(sock, &args.dest, ttl, args.tos);
             type = recv_probe(sock, &reply_addr);
             while (type == -1)
             {
