@@ -50,6 +50,7 @@ t_args parse_args(int argc, char **argv)
     args.tos = 0;
     args.first_ttl = 1;
     args.wait_time = 3;
+    args.source = NULL;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--help") == 0)
@@ -101,6 +102,14 @@ t_args parse_args(int argc, char **argv)
             }
             args.wait_time = atoi(argv[++i]);
         }
+        else if (strcmp(argv[i], "-s") == 0) {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -s requires a value\n");
+                exit(1);
+            }
+            args.source = argv[++i];
+        }
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
     }
@@ -132,6 +141,30 @@ void resolve_hostname(t_args *args)
     memcpy(&args->dest, res->ai_addr, sizeof(args->dest));
     freeaddrinfo(res);
 }
+
+static void bind_source(int sock, char *source)
+{
+    struct sockaddr_in addr;
+    struct addrinfo hints;
+    struct addrinfo *res;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_RAW;
+    if (getaddrinfo(source, NULL, &hints, &res) != 0)
+    {
+        fprintf(stderr, "ft_traceroute: cannot resolve source %s\n", source);
+        exit(1);
+    }
+    memcpy(&addr, res->ai_addr, sizeof(addr));
+    freeaddrinfo(res);
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        perror("ft_traceroute: bind");
+        exit(1);
+    }
+}
+
 int create_socket(void)
 {
     int sock;
@@ -222,7 +255,9 @@ int main(int argc, char **argv)
     resolve_hostname(&args);
     printf("ft_traceroute to %s (%s), %d hops max\n", args.hostname, inet_ntoa(args.dest.sin_addr), args.max_hops);
     sock = create_socket();
-    set_socket_timeout(sock, 3);
+    if (args.source)
+        bind_source(sock, args.source);
+    set_socket_timeout(sock, args.wait_time);
 
     for (int ttl = args.first_ttl; ttl <= args.max_hops; ttl++)
     {

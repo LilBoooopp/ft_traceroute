@@ -21,6 +21,7 @@ typedef struct s_args {
     int tos;
     int first_ttl;
     int wait_time;
+    char *source;
 }   t_args;
 
 t_args  parse_args(int argc, char **argv);
