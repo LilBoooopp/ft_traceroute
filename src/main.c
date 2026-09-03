@@ -49,6 +49,7 @@ t_args parse_args(int argc, char **argv)
     args.nqueries = 3;
     args.tos = 0;
     args.first_ttl = 1;
+    args.wait_time = 3;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--help") == 0)
@@ -91,6 +92,14 @@ t_args parse_args(int argc, char **argv)
                 exit(1);
             }
             args.first_ttl = atoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-w") == 0) {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -w requires a value\n");
+                exit(1);
+            }
+            args.wait_time = atoi(argv[++i]);
         }
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
@@ -227,7 +236,7 @@ int main(int argc, char **argv)
             while (type == -1)
             {
                 gettimeofday(&end, NULL);
-                if (elapsed_ms(&start, &end) > 3000.0)
+                if (elapsed_ms(&start, &end) > args.wait_time * 1000.0)
                 {
                     type = -2;
                     break;

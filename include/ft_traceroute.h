@@ -20,6 +20,7 @@ typedef struct s_args {
     int nqueries;
     int tos;
     int first_ttl;
+    int wait_time;
 }   t_args;
 
 t_args  parse_args(int argc, char **argv);
