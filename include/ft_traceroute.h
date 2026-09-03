@@ -19,6 +19,7 @@ typedef struct s_args {
     int max_hops;
     int nqueries;
     int tos;
+    int first_ttl;
 }   t_args;
 
 t_args  parse_args(int argc, char **argv);

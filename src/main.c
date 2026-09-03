@@ -20,6 +20,7 @@ void print_help(void)
     printf("  -m max_hops    Set max number of hops (default 30)\n");
     printf("  -q nqueries    Set number of probes per hop (default 3)\n");
     printf("  -t tos         Set type of service bytes (default 0)\n");
+    printf("  -f first_ttl   Start from first_ttl hops (default 1)\n");
 }
 
 unsigned short checksum(void *buf, int len)
@@ -47,6 +48,7 @@ t_args parse_args(int argc, char **argv)
     args.max_hops = MAX_HOPS;
     args.nqueries = 3;
     args.tos = 0;
+    args.first_ttl = 1;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--help") == 0)
@@ -80,6 +82,15 @@ t_args parse_args(int argc, char **argv)
                 exit(1);
             }
             args.tos = atoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-f") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "ft_traceroute: -f requires a value\n");
+                exit(1);
+            }
+            args.first_ttl = atoi(argv[++i]);
         }
         else if (argv[i][0] != '-')
             args.hostname = argv[i];
@@ -204,7 +215,7 @@ int main(int argc, char **argv)
     sock = create_socket();
     set_socket_timeout(sock, 3);
 
-    for (int ttl = 1; ttl <= args.max_hops; ttl++)
+    for (int ttl = args.first_ttl; ttl <= args.max_hops; ttl++)
     {
         printf("%2d ", ttl);
         for (int probe = 0; probe < args.nqueries; probe++)
